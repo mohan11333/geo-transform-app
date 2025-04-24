@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 import yfinance as yf
 import matplotlib.pyplot as plt
@@ -17,7 +19,7 @@ if st.button("Load & Transform Data"):
         st.error("No data returned. Check the ticker and date range.")
         st.stop()
 
-    st.write("Downloaded columns:", list(data.columns))  # <--- Debug line
+    st.write("Downloaded columns:", list(data.columns))  # Debug line
 
     # Fix: Use the first available price column
     price_col = None
@@ -32,10 +34,27 @@ if st.button("Load & Transform Data"):
 
     prices = data[price_col].values
 
-    # Now continue with transformation…
-    # Create 2D points (x: time step, y: price)
+    # Create 2D points (x: normalized time, y: price)
     x = np.arange(len(prices))
     y = prices
+
+    # Print debug information
+    print(len(x), len(y))
+    print(type(x), type(y))
+
+    # Convert to numpy arrays
+    x = np.array(x)
+    y = np.array(y)
+
+    # Normalize x to be between 0 and 1
+    min_len = min(len(x), len(y))
+    x = x[:min_len]
+    y = y[:min_len]
+
+    # Normalize x to be between 0 and 1
+    x = np.linspace(0, 1, min_len)  # x: normalized time
+    y = y[:min_len]                  # y: prices
+
     points = np.vstack((x, y))
 
     st.subheader("Original Plot")
