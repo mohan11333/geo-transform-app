@@ -17,9 +17,9 @@ if st.button("Load & Transform Data"):
         st.error("No data returned. Check the ticker and date range.")
         st.stop()
 
-    st.write("Downloaded columns:", list(data.columns))  # <--- Debug line
+    st.write("Downloaded columns:", list(data.columns))  # Debug info
 
-    # Fix: Use the first available price column
+    # Choose appropriate price column
     price_col = None
     for col in ["Adj Close", "Close", "Open", "High", "Low"]:
         if col in data.columns:
@@ -27,20 +27,18 @@ if st.button("Load & Transform Data"):
             break
 
     if not price_col:
-        st.error("Could not find any price column (Adj Close, Close, etc.) in the data.")
+        st.error("Could not find any price column in the data.")
         st.stop()
 
     prices = data[price_col].values
 
-    # Create 2D points (x: time step, y: price)
+    # Create 2D points
     x = np.arange(len(prices))
     y = prices
 
-    # Ensure x and y are numpy arrays and have the same length
-    x = np.array(x)
-    y = np.array(y)
-    print("Length of x:", len(x))
-    print("Length of y:", len(y))
+    # Ensure x and y are 1D arrays and trimmed to same length
+    x = np.ravel(x)
+    y = np.ravel(y)
     min_len = min(len(x), len(y))
     x = x[:min_len]
     y = y[:min_len]
@@ -53,7 +51,7 @@ if st.button("Load & Transform Data"):
     ax1.set_title("Original Price Curve")
     st.pyplot(fig1)
 
-    # Get transformation matrix input
+    # Transformation input
     st.subheader("Enter 2D Transformation Matrix")
     a11 = st.number_input("a11", value=1.0)
     a12 = st.number_input("a12", value=0.0)
