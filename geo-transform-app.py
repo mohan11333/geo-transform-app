@@ -17,15 +17,23 @@ if st.button("Load & Transform Data"):
         st.error("No data returned. Check the ticker and date range.")
         st.stop()
 
-    st.write("Available columns:", data.columns)
+    st.write("Downloaded columns:", list(data.columns))  # <--- Debug line
 
-    if "Adj Close" in data.columns:
-        prices = data["Adj Close"].values
-    elif "Close" in data.columns:
-        prices = data["Close"].values
-    else:
-        st.error("No 'Adj Close' or 'Close' column found in data.")
+    # Fix: Use the first available price column
+    price_col = None
+    for col in ["Adj Close", "Close", "Open", "High", "Low"]:
+        if col in data.columns:
+            price_col = col
+            break
+
+    if not price_col:
+        st.error("Could not find any price column (Adj Close, Close, etc.) in the data.")
         st.stop()
+
+    prices = data[price_col].values
+
+    
+
 
     # Create 2D points (x: time step, y: price)
     x = np.arange(len(prices))
