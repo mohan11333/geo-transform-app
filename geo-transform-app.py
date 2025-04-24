@@ -1,65 +1,63 @@
+
 import streamlit as st
-import yfinance as yf
-import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
+import pyproj
+import json
 
-st.title("2D Geometric Transformation Explorer")
+st.title("Geo Coordinate Transformer")
 
-# Get ticker and dates
-ticker = st.text_input("Enter Stock Ticker (e.g., AAPL):", "AAPL")
-start = st.date_input("Start Date")
-end = st.date_input("End Date")
+uploaded_file = st.file_uploader("Upload a JSON file", type="json")
 
-if st.button("Load & Transform Data"):
-    data = yf.download(ticker, start=start, end=end)
+if uploaded_file is not None:
+    data = json.load(uploaded_file)
 
-    if data.empty:
-        st.error("No data returned. Check the ticker and date range.")
+    # Display structure
+    st.subheader("JSON Structure")
+    st.json(data)
+
+    # Extract values assuming format is like: [[lat1, lon1], [lat2, lon2], ...]
+    x, y = [], []
+    for item in data:
+        if isinstance(item, list) and len(item) >= 2:
+            x.append(item[0])
+            y.append(item[1])
+
+    # Ensure x and y are numpy arrays and have matching lengths
+    x = np.array(x)
+    y = np.array(y)
+
+    if len(x) == 0 or len(y) == 0:
+        st.error("x or y array is empty — cannot stack empty arrays.")
         st.stop()
 
-    st.write("Downloaded columns:", list(data.columns))  # <--- Debug line
+    min_len = min(len(x), len(y))
+    x = x[:min_len]
+    y = y[:min_len]
 
-    # Fix: Use the first available price column
-    price_col = None
-    for col in ["Adj Close", "Close", "Open", "High", "Low"]:
-        if col in data.columns:
-            price_col = col
-            break
-
-    if not price_col:
-        st.error("Could not find any price column (Adj Close, Close, etc.) in the data.")
-        st.stop()
-
-    prices = data[price_col].values
-
-    
-
-
-    # Create 2D points (x: time step, y: price)
-    x = np.arange(len(prices))
-    y = prices
+    # Stack into a 2D array for projection
     points = np.vstack((x, y))
 
-    st.subheader("Original Plot")
-    fig1, ax1 = plt.subplots()
-    ax1.plot(x, y)
-    ax1.set_title("Original Price Curve")
-    st.pyplot(fig1)
+    # Transformer (example from WGS84 to Web Mercator)
+    transformer = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+    transformed_x, transformed_y = transformer.transform(points[0], points[1])
 
-    # Get transformation matrix input
-    st.subheader("Enter 2D Transformation Matrix")
-    a11 = st.number_input("a11", value=1.0)
-    a12 = st.number_input("a12", value=0.0)
-    a21 = st.number_input("a21", value=0.0)
-    a22 = st.number_input("a22", value=1.0)
+    # Create DataFrame and show
+    df = pd.DataFrame({
+        'Original_Lon': points[0],
+        'Original_Lat': points[1],
+        'Transformed_X': transformed_x,
+        'Transformed_Y': transformed_y
+    })
 
-    transform = np.array([[a11, a12], [a21, a22]])
+    st.subheader("Transformed Coordinates")
+    st.dataframe(df)
 
-    # Apply transformation
-    transformed_points = transform @ points
-
-    st.subheader("Transformed Plot")
-    fig2, ax2 = plt.subplots()
-    ax2.plot(transformed_points[0], transformed_points[1])
-    ax2.set_title("Transformed Curve")
-    st.pyplot(fig2)
+    # Option to download result
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        "Download Transformed Data as CSV",
+        data=csv,
+        file_name="transformed_coordinates.csv",
+        mime="text/csv"
+    )
