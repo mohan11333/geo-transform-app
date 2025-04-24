@@ -1,3 +1,4 @@
+
 import streamlit as st
 import yfinance as yf
 import matplotlib.pyplot as plt
@@ -54,3 +55,28 @@ if st.button("Load & Transform Data") or "data" in st.session_state:
     ax1.plot(x, y)
     ax1.set_title("Original Price Curve")
     st.pyplot(fig1)
+
+    # Matrix input
+    st.subheader("Enter 2D Transformation Matrix")
+    a11 = st.number_input("a11", value=1.0)
+    a12 = st.number_input("a12", value=0.0)
+    a21 = st.number_input("a21", value=0.0)
+    a22 = st.number_input("a22", value=1.0)
+
+    transform = np.array([[a11, a12], [a21, a22]])
+
+    # Apply transformation
+    transformed_points = transform @ points
+
+    # Plot transformed
+    st.subheader("Transformed Plot")
+    fig2, ax2 = plt.subplots()
+    ax2.plot(transformed_points[0], transformed_points[1])
+    ax2.set_title("Transformed Curve")
+    st.pyplot(fig2)
+
+# Optional: Reset button to clear session state
+if st.button("Reset App"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.experimental_rerun()
