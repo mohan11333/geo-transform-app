@@ -63,8 +63,6 @@ if st.button("Load & Transform Data"):
     ax1.set_title("Original Price Curve")
     st.pyplot(fig1)
 
-   transformation_type = st.selectbox("Select Transformation Type", ["None", "Scale", "Rotate", "Translate"])
-
 if transformation_type == "Scale":
     scale_factor = st.number_input("Scale Factor", value=1.0)
     transform = np.array([[scale_factor, 0], [0, scale_factor]])
